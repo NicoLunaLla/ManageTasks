@@ -3,9 +3,9 @@
     {
       "id": "1729",
       "name": "Nicolas",
-      "lastName": "Luna",
-      "username": "NicoL",
-      "email": "Nicolasl.1125@gmail.com",
+      "lastName": "Reyes Suarez",
+      "username": "NicoR",
+      "email": "nreyessua@estudiante.ibero.edu.co",
       "password": "123456"
     },
     {
@@ -14,7 +14,7 @@
       "lastName": "Luna Llanos",
       "username": "Nluna",
       "email": "nlunalla@estudiante.ibero.edu.co",
-      "password": "8Se6UzSDSGh3vbv",
+      "password": "abcdef",
       "confirmPassword": ""
     }
   ],
