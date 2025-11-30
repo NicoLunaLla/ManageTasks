@@ -1,12 +1,18 @@
 // TasksPage.js
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import TaskAlert from './TaskAlerts'; // Ajusta la ruta si estás en otra carpeta
+import TaskAlert from './TaskAlerts';
 
 
 function TasksPage() {
   const { username } = useParams();
+  const navigate = useNavigate();
+  
+  // Validar username antes de continuar
+  if (!username) {
+    return <div>Error: Usuario no válido</div>;
+  }
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const [activeSection, setActiveSection] = useState('inicio');
@@ -27,6 +33,10 @@ function TasksPage() {
   }, [activeSection]);
 
   const fetchTasks = async () => {
+    if (!username) {
+      console.error('Error: Usuario no válido');
+      return;
+    }
     try {
       const res = await axios.get('http://localhost:3001/tasks');
       setTasks(res.data);
@@ -36,6 +46,10 @@ function TasksPage() {
   };
 
   const fetchUserProfile = async () => {
+    if (!username) {
+      console.error('Error: Usuario no válido');
+      return;
+    }
     try {
       const res = await axios.get(`http://localhost:3001/users?username=${username}`);
       if (res.data.length > 0) {
@@ -75,83 +89,61 @@ function TasksPage() {
     }
   };
 
-  const estadosDisponibles = [
-  'Sin iniciar',
-  'Por vencer',
-  'En proceso',
-  'Vencida',
-  'Completada'
-];
+  const actualizarEstado = async (task, nuevoEstado) => {
+    try {
+      const completada = nuevoEstado === 'Completada';
+      const res = await axios.put(`http://localhost:3001/tasks/${task.id}`, {
+        ...task,
+        status: nuevoEstado,
+        completed: completada
+      });
+      setTasks(tasks.map(t => t.id === task.id ? res.data : t));
+    } catch (error) {
+      console.error('Error actualizando estado:', error);
+    }
+  };
 
-const actualizarEstado = async (task, nuevoEstado) => {
-  try {
-    const res = await axios.put(`http://localhost:3001/tasks/${task.id}`, {
-      ...task,
-      status: nuevoEstado
-    });
-    setTasks(tasks.map(t => t.id === task.id ? res.data : t));
-  } catch (error) {
-    console.error('Error actualizando estado:', error);
-  }
-};
-const actualizarEstadoTarea = async (task, nuevoEstado) => {
-  try {
-    // Si el estado es Completada, marcar como completada
+  const addTask = async () => {
+    if (!newTask.trim()) return;
+    if (!username) {
+      console.error('Error: Usuario no válido');
+      return;
+    }
+    try {
+      const res = await axios.post('http://localhost:3001/tasks', {
+        description: newTask,
+        user: username,
+        date: date ? new Date(date).toISOString() : new Date().toISOString(),
+        daily: isDaily,
+        priority: priority,
+        status: 'Sin iniciar',
+        completed: false
+      });
+      setTasks([...tasks, res.data]);
+      setNewTask('');
+      setDateTask('');
+      setIsDaily(false);
+      setPriority('media');
+    } catch (err) {
+      console.error('Error al agregar tarea:', err);
+    }
+  };
+
+  const toggleTask = async (task) => {
+    const nuevoEstado = task.status === 'Completada' ? 'Sin iniciar' : 'Completada';
     const completada = nuevoEstado === 'Completada';
 
-    // Para otros estados que no son Completada, ajustar fecha si lo deseas (opcional)
-    await axios.put(`http://localhost:3001/tasks/${task.id}`, {
-      ...task,
-      completed: completada,
-      estadoManual: nuevoEstado // guardamos el estado manual si lo deseas
-    });
-
-    const actualizada = {
-      ...task,
-      completed: completada,
-      estadoManual: nuevoEstado
-    };
-
-    setTasks(tasks.map(t => (t.id === task.id ? actualizada : t)));
-  } catch (error) {
-    console.error('Error actualizando estado de tarea:', error);
-  }
-};
-
-const addTask = async () => {
-  if (!newTask.trim()) return;
-  try {
-    const res = await axios.post('http://localhost:3001/tasks', {
-      description: newTask,
-      user: username,
-      date: date ? new Date(date).toISOString() : new Date().toISOString(),
-      daily: isDaily,
-      priority: priority,
-      status: 'Sin iniciar' // ✅ NUEVO CAMPO
-    });
-    setTasks([...tasks, res.data]);
-    setNewTask('');
-    setDateTask('');
-    setIsDaily(false);
-    setPriority('media');
-  } catch (err) {
-    console.error('Error al agregar tarea:', err);
-  }
-};
-
-const toggleTask = async (task) => {
-  const nuevoEstado = task.status === 'Completada' ? 'Sin iniciar' : 'Completada';
-
-  try {
-    const res = await axios.put(`http://localhost:3001/tasks/${task.id}`, {
-      ...task,
-      status: nuevoEstado
-    });
-    setTasks(tasks.map(t => t.id === task.id ? res.data : t));
-  } catch (err) {
-    console.error('Error al actualizar estado:', err);
-  }
-};
+    try {
+      const res = await axios.put(`http://localhost:3001/tasks/${task.id}`, {
+        ...task,
+        status: nuevoEstado,
+        completed: completada
+      });
+      setTasks(tasks.map(t => t.id === task.id ? res.data : t));
+    } catch (err) {
+      console.error('Error al actualizar estado:', err);
+    }
+  };
 
   const deleteTask = async (id) => {
     try {
@@ -430,7 +422,11 @@ const sortTasksByStatus = (tasks) => {
             </select>
           </div>
           <div className="w-100 mt-4">
-            {renderTaskList(sortTasksByPriority(tasks.filter(t => t.user === username)))}
+            {renderTaskList(
+              sortOption === 'prioridad' 
+                ? sortTasksByPriority(tasks.filter(t => t.user === username))
+                : sortTasksByStatus(tasks.filter(t => t.user === username))
+            )}
           </div>
         </div>
       );
@@ -466,36 +462,35 @@ const sortTasksByStatus = (tasks) => {
         </div>
         <ul className="nav flex-column">
           <li className="nav-item mb-2">
-            <a className="nav-link text-white d-flex align-items-center" href="#" onClick={() => setActiveSection('inicio')}>
+            <button className="nav-link text-white d-flex align-items-center border-0 bg-transparent w-100 text-start" onClick={() => setActiveSection('inicio')}>
               <i className="fas fa-home me-2"></i>
               {!sidebarCollapsed && 'Inicio'}
-            </a>
+            </button>
           </li>
           <li className="nav-item mb-2">
-            <a className="nav-link text-white d-flex align-items-center" href="#" onClick={() => setActiveSection('tareas')}>
+            <button className="nav-link text-white d-flex align-items-center border-0 bg-transparent w-100 text-start" onClick={() => setActiveSection('tareas')}>
               <i className="fas fa-tasks me-2"></i>
               {!sidebarCollapsed && 'Tareas'}
-            </a>
+            </button>
           </li>
           <li className="nav-item mb-2">
-            <a className="nav-link text-white d-flex align-items-center" href="#" onClick={() => setActiveSection('perfil')}>
+            <button className="nav-link text-white d-flex align-items-center border-0 bg-transparent w-100 text-start" onClick={() => setActiveSection('perfil')}>
               <i className="fas fa-user me-2"></i>
               {!sidebarCollapsed && 'Mis datos'}
-            </a>
+            </button>
           </li>
           <li className="nav-item">
-            <a
-              className="nav-link text-white d-flex align-items-center"
-              href="#"
+            <button
+              className="nav-link text-white d-flex align-items-center border-0 bg-transparent w-100 text-start"
               onClick={() => {
                 if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-                  window.location.href = "/";
+                  navigate("/");
                 }
               }}
             >
               <i className="fas fa-sign-out-alt me-2"></i>
               {!sidebarCollapsed && 'Cerrar sesión'}
-            </a>
+            </button>
           </li>
         </ul>
         {!sidebarCollapsed && (
