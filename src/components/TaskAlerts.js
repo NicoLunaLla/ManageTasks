@@ -1,13 +1,13 @@
 // src/components/TaskAlerts.js
 import React from 'react';
+import { isDatePast, isDateToday, getDateOnly } from '../utils/dateUtils';
 
 function TaskAlert({ tasks, username }) {
   const getAlertMessage = () => {
-    const hoy = new Date().toISOString().split('T')[0];
     const tareasUsuario = tasks.filter(t => t.user === username && !t.completed);
 
-    const vencidas = tareasUsuario.filter(t => (t.date || '').split('T')[0] < hoy);
-    const hoyVencen = tareasUsuario.filter(t => (t.date || '').split('T')[0] === hoy);
+    const vencidas = tareasUsuario.filter(t => isDatePast(t.date));
+    const hoyVencen = tareasUsuario.filter(t => isDateToday(t.date));
 
     if (vencidas.length > 0) {
       return `⚠️ Tienes ${vencidas.length} tarea(s) vencida(s). ¡Revísalas!`;
