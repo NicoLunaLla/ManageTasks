@@ -1,46 +1,147 @@
-# Comenzando con Create React App
+# 🚀 ManageTasks – Proyecto Colaborativo (Git + GitHub)
 
-Este proyecto fue creado con [Create React App](https://github.com/facebook/create-react-app).
+## 👥 Integrantes del equipo
+- **Nicolás Andrés Reyes Suárez**  
+  - Usuario GitHub: *NicolasLunaL*  
+  - Correo institucional: __________________  
+  - ID Banner: __________________  
 
-## Comandos disponibles
+- **Nicolás Luna Llanos**  
+  - Usuario GitHub: *NicoLunaLla*  
+  - Correo institucional: __________________  
+  - ID Banner: __________________  
 
-En el directorio del proyecto, puedes ejecutar:
+---
 
-### `npm start`
+## 📖 Descripción del proyecto
+**ManageTasks** es una aplicación desarrollada en **React** para la gestión simple de tareas y usuarios.  
+Este proyecto se construyó como parte de la actividad colaborativa del módulo **Mantenimiento de Software**, implementando versionamiento con Git y GitHub.
 
-Ejecuta la aplicación en modo desarrollo.  
-Abre [http://localhost:3000](http://localhost:3000) para verla en tu navegador.
+La aplicación permite:
 
-La página se recargará automáticamente cuando hagas cambios.  
-También puedes ver errores de lint en la consola.
+- Registrar nuevas tareas  
+- Listarlas y visualizarlas  
+- Marcar tareas como completadas  
+- Gestionar usuarios (simulados) asociados a dichas tareas  
+- Consumir una API local mediante **json-server**
 
-### `npm test`
+---
 
-Lanza el ejecutor de pruebas en modo interactivo.  
-Consulta la sección sobre [ejecución de pruebas](https://facebook.github.io/create-react-app/docs/running-tests) para más información.
+## 🚀 Cómo ejecutar el proyecto
 
-### `npm run build`
+### 1️⃣ Instalar dependencias
 
-Construye la aplicación para producción en la carpeta `build`.  
-Agrupa correctamente React en modo producción y optimiza el build para el mejor rendimiento.
+```bash
+npm install
+```
 
-El build será minificado y los nombres de archivo incluirán hash.  
-¡Tu app estará lista para ser desplegada!
+### 2️⃣ Ejecutar aplicación React
 
-Consulta la sección sobre [despliegue](https://facebook.github.io/create-react-app/docs/deployment) para más información.
+```bash
+npm start
+```
 
-### `npm run eject`
+La aplicación se abrirá en:
 
-**Nota: esta es una operación irreversible. Una vez ejecutes `eject`, no podrás volver atrás.**
+```
+http://localhost:3000
+```
 
-Si no estás satisfecho con la configuración del build y las herramientas incluidas, puedes ejecutar `eject` en cualquier momento.  
-Este comando moverá todas las configuraciones (webpack, Babel, ESLint, etc.) directamente a tu proyecto para que tengas control total.
+### 3️⃣ Iniciar servidor JSON (API local)
 
-Todos los comandos seguirán funcionando, pero ahora serán locales al proyecto.  
-A partir de ese punto, tú serás responsable del mantenimiento de esas configuraciones.
+```bash
+json-server --watch db.json --port 3001
+```
 
-No necesitas usar `eject` nunca. La configuración predeterminada es suficiente para la mayoría de los proyectos pequeños y medianos.  
-Sin embargo, la opción existe si necesitas personalizar en profundidad.
+El servidor estará disponible en:
+
+```
+http://localhost:3001
+```
+**Importante:** Asegúrate de que el archivo `db.json` esté en la raíz del proyecto y contenga una estructura inicial como la siguiente:
+
+```json
+{
+  "users": [],
+  "tasks": []
+}
+```
+---
+
+## 🧪 Funcionalidades implementadas (Historias de usuario)
+
+### ✔ Historia 1 – Nicolás Luna  
+**Como** usuario  
+**Quiero** ver un mensaje de bienvenida  
+**Para** entender rápidamente el propósito de la aplicación  
+
+### ✔ Historia 2 – Nicolás Reyes  
+**Como** usuario  
+**Quiero** registrar nuevas tareas  
+**Para** organizar mis pendientes  
+
+### ✔ Historia 3 – Nicolás Luna  
+**Como** usuario  
+**Quiero** ver un listado de tareas registradas  
+**Para** gestionarlas fácilmente  
+
+### ✔ Historia 4 – Nicolás Reyes  
+**Como** usuario  
+**Quiero** poder marcar tareas como completadas  
+**Para** distinguir entre pendientes y finalizadas  
+
+### ✔ Historia 5 – Trabajo en equipo  
+**Como** usuario avanzado  
+**Quiero** gestionar usuarios asociados a tareas  
+**Para** distribuir responsabilidades dentro del sistema  
+
+---
+
+## 🛠 Comandos Git utilizados
+
+```bash
+git clone <url>
+git status
+git add .
+git commit -m "mensaje"
+git push origin main
+git branch
+git checkout <rama>
+git merge <rama>
+git log --oneline
+```
+
+---
+
+## 🤝 Colaboración del equipo
+
+- Se utilizaron ramas individuales para implementar las historias de usuario.  
+- Se realizaron commits identificando claramente el autor y la historia correspondiente.  
+- Los cambios se integraron en la rama principal (**main**) usando `merge`.  
+- La participación de cada integrante puede verificarse en la sección **Contributors** y en el historial de commits del repositorio.
+
+---
+
+## 📎 Enlaces
+
+📌 **Repositorio del proyecto:**  
+https://github.com/NicoLunaLla/ManageTasks
+
+---
+
+## 📝 Notas adicionales
+
+- Este proyecto es académico y está basado en *json-server* y *Create React App*.  
+- Se recomienda instalar **json-server** globalmente si no está disponible:
+
+```bash
+npm install -g json-server
+```
+
+---
+
+¡Gracias por visitar este repositorio! 🎉
+
 
 ## Más información
 
@@ -80,44 +181,5 @@ Esta sección se ha movido aquí:
 
 ---
 
-## Iniciar la base de datos (json-server)
 
-Este proyecto utiliza [json-server](https://github.com/typicode/json-server) para simular una API REST local.
 
-### Instalación (una sola vez)
-
-Si no tienes `json-server` instalado globalmente, puedes hacerlo con:
-
-```bash
-npm install -g json-server
-```
-
-O como dependencia de desarrollo en el proyecto:
-
-```bash
-npm install json-server --save-dev
-```
-
-### Ejecutar el servidor de base de datos
-
-Desde la raíz del proyecto, ejecuta el siguiente comando:
-
-```bash
-npx json-server --watch db.json --port 3001
-```
-
-Esto iniciará un servidor en:  
-🔗 [http://localhost:3001](http://localhost:3001)
-
-Tu aplicación React se conecta a esta API para consultar, crear, editar y eliminar tareas y usuarios.
-
----
-
-**Importante:** Asegúrate de que el archivo `db.json` esté en la raíz del proyecto y contenga una estructura inicial como la siguiente:
-
-```json
-{
-  "users": [],
-  "tasks": []
-}
-```
