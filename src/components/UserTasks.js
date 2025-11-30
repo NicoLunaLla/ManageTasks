@@ -1,9 +1,12 @@
 // TasksPage.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
 import TaskAlert from './TaskAlerts';
-
+import { API_ENDPOINTS } from '../config/api';
+import { formatDateToISO } from '../utils/dateUtils';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 function TasksPage() {
   const { username } = useParams();
@@ -24,34 +27,35 @@ function TasksPage() {
   const [editForm, setEditForm] = useState({ name: '', lastName: '', email: '', password: '', confirmPassword: '' });
   const [taskFilter, setTaskFilter] = useState(null);
   const [priority, setPriority] = useState('media');
-  const [sortOption, setSortOption] = useState('prioridad'); 
+  const [sortOption, setSortOption] = useState('prioridad');
+  const [loading, setLoading] = useState(false); 
 
 
-  useEffect(() => {
-    if (activeSection === 'tareas' || activeSection === 'inicio') fetchTasks();
-    if (activeSection === 'perfil') fetchUserProfile();
-  }, [activeSection]);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!username) {
       console.error('Error: Usuario no válido');
       return;
     }
     try {
-      const res = await axios.get('http://localhost:3001/tasks');
+      setLoading(true);
+      const res = await axios.get(API_ENDPOINTS.TASKS);
       setTasks(res.data);
     } catch (err) {
       console.error('Error al obtener las tareas:', err);
+      toast.error('❌ Error al cargar las tareas');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [username]);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!username) {
       console.error('Error: Usuario no válido');
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:3001/users?username=${username}`);
+      setLoading(true);
+      const res = await axios.get(`${API_ENDPOINTS.USERS}?username=${username}`);
       if (res.data.length > 0) {
         setUserProfile(res.data[0]);
         setEditForm({
@@ -64,8 +68,16 @@ function TasksPage() {
       }
     } catch (err) {
       console.error('Error al obtener el perfil:', err);
+      toast.error('❌ Error al cargar el perfil');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [username]);
+
+  useEffect(() => {
+    if (activeSection === 'tareas' || activeSection === 'inicio') fetchTasks();
+    if (activeSection === 'perfil') fetchUserProfile();
+  }, [activeSection, fetchTasks, fetchUserProfile]);
 
   const handleProfileChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -73,100 +85,139 @@ function TasksPage() {
 
   const handleProfileUpdate = async () => {
     if (editForm.password && editForm.password !== editForm.confirmPassword) {
-      alert('⚠️ Las contraseñas no coinciden.');
+      toast.error('⚠️ Las contraseñas no coinciden.');
+      return;
+    }
+
+    if (editForm.password && !validatePassword(editForm.password)) {
+      toast.error('⚠️ La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    if (editForm.email && !validateEmail(editForm.email)) {
+      toast.error('⚠️ El correo electrónico no tiene un formato válido.');
       return;
     }
 
     try {
-      await axios.put(`http://localhost:3001/users/${userProfile.id}`, {
+      setLoading(true);
+      await axios.put(`${API_ENDPOINTS.USERS}/${userProfile.id}`, {
         ...userProfile,
         ...editForm,
         password: editForm.password ? editForm.password : userProfile.password
       });
-      alert('Perfil actualizado correctamente.');
+      toast.success('✅ Perfil actualizado correctamente');
+      setEditForm({
+        ...editForm,
+        password: '',
+        confirmPassword: ''
+      });
     } catch (err) {
       console.error('Error al actualizar perfil:', err);
+      toast.error('❌ Error al actualizar el perfil');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const actualizarEstado = async (task, nuevoEstado) => {
+  const actualizarEstado = useCallback(async (task, nuevoEstado) => {
     try {
       const completada = nuevoEstado === 'Completada';
-      const res = await axios.put(`http://localhost:3001/tasks/${task.id}`, {
+      const res = await axios.put(`${API_ENDPOINTS.TASKS}/${task.id}`, {
         ...task,
         status: nuevoEstado,
         completed: completada
       });
-      setTasks(tasks.map(t => t.id === task.id ? res.data : t));
+      setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? res.data : t));
+      toast.success('✅ Estado actualizado');
     } catch (error) {
       console.error('Error actualizando estado:', error);
+      toast.error('❌ Error al actualizar el estado');
     }
-  };
+  }, []);
 
-  const addTask = async () => {
-    if (!newTask.trim()) return;
+  const addTask = useCallback(async () => {
+    if (!newTask.trim()) {
+      toast.error('⚠️ La descripción de la tarea no puede estar vacía');
+      return;
+    }
     if (!username) {
       console.error('Error: Usuario no válido');
       return;
     }
     try {
-      const res = await axios.post('http://localhost:3001/tasks', {
+      setLoading(true);
+      const res = await axios.post(API_ENDPOINTS.TASKS, {
         description: newTask,
         user: username,
-        date: date ? new Date(date).toISOString() : new Date().toISOString(),
+        date: formatDateToISO(date),
         daily: isDaily,
         priority: priority,
         status: 'Sin iniciar',
         completed: false
       });
-      setTasks([...tasks, res.data]);
+      setTasks(prevTasks => [...prevTasks, res.data]);
       setNewTask('');
       setDateTask('');
       setIsDaily(false);
       setPriority('media');
+      toast.success('✅ Tarea agregada correctamente');
     } catch (err) {
       console.error('Error al agregar tarea:', err);
+      toast.error('❌ Error al agregar la tarea');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [newTask, username, date, isDaily, priority]);
 
-  const toggleTask = async (task) => {
+  const toggleTask = useCallback(async (task) => {
     const nuevoEstado = task.status === 'Completada' ? 'Sin iniciar' : 'Completada';
     const completada = nuevoEstado === 'Completada';
 
     try {
-      const res = await axios.put(`http://localhost:3001/tasks/${task.id}`, {
+      const res = await axios.put(`${API_ENDPOINTS.TASKS}/${task.id}`, {
         ...task,
         status: nuevoEstado,
         completed: completada
       });
-      setTasks(tasks.map(t => t.id === task.id ? res.data : t));
+      setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? res.data : t));
+      toast.success(completada ? '✅ Tarea completada' : '📝 Tarea marcada como pendiente');
     } catch (err) {
       console.error('Error al actualizar estado:', err);
+      toast.error('❌ Error al actualizar la tarea');
     }
-  };
+  }, []);
 
-  const deleteTask = async (id) => {
+  const deleteTask = useCallback(async (id) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+      return;
+    }
     try {
-      await axios.delete(`http://localhost:3001/tasks/${id}`);
-      setTasks(tasks.filter(t => t.id !== id));
+      setLoading(true);
+      await axios.delete(`${API_ENDPOINTS.TASKS}/${id}`);
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== id));
+      toast.success('✅ Tarea eliminada correctamente');
     } catch (err) {
       console.error('Error al eliminar tarea:', err);
+      toast.error('❌ Error al eliminar la tarea');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
   const handleResize = (e) => {
     const newWidth = Math.max(150, Math.min(400, e.clientX));
     if (!sidebarCollapsed) setSidebarWidth(newWidth);
   };
 
-  const sortTasksByPriority = (tasks) => {
+  const sortTasksByPriority = useCallback((tasks) => {
     const prioridadOrden = { alta: 1, media: 2, baja: 3 };
     return [...tasks].sort((a, b) => {
       const aVal = prioridadOrden[(a.priority || '').toLowerCase()] || 4;
       const bVal = prioridadOrden[(b.priority || '').toLowerCase()] || 4;
       return aVal - bVal;
-  });
-};
+    });
+  }, []);
 
 const getPriorityBadge = (priority) => {
   const lower = (priority || '').toLowerCase();
@@ -220,21 +271,21 @@ const getStatusBadge = (status) => {
 
 
 
-const sortTasksByStatus = (tasks) => {
-  const statusOrder = {
-    'Vencida': 1,
-    'En proceso': 2,
-    'Por vencer': 3,
-    'Sin iniciar': 4,
-    'Completada': 5
-  };
+  const sortTasksByStatus = useCallback((tasks) => {
+    const statusOrder = {
+      'Vencida': 1,
+      'En proceso': 2,
+      'Por vencer': 3,
+      'Sin iniciar': 4,
+      'Completada': 5
+    };
 
-  return [...tasks].sort((a, b) => {
-    const statusA = getTaskStatus(a);
-    const statusB = getTaskStatus(b);
-    return statusOrder[statusA] - statusOrder[statusB];
-  });
-};
+    return [...tasks].sort((a, b) => {
+      const statusA = getTaskStatus(a);
+      const statusB = getTaskStatus(b);
+      return statusOrder[statusA] - statusOrder[statusB];
+    });
+  }, []);
 
 
 
@@ -314,11 +365,27 @@ const sortTasksByStatus = (tasks) => {
     </div>
   );
 
+  const tareasUsuario = useMemo(() => 
+    tasks.filter(t => t.user === username), 
+    [tasks, username]
+  );
+
+  const tareasFiltradasYOrdenadas = useMemo(() => {
+    const tareasFiltradas = taskFilter || tareasUsuario;
+    return sortOption === 'prioridad' 
+      ? sortTasksByPriority(tareasFiltradas)
+      : sortTasksByStatus(tareasFiltradas);
+  }, [taskFilter, tareasUsuario, sortOption, sortTasksByPriority, sortTasksByStatus]);
+
+  const estadisticas = useMemo(() => {
+    const completadas = tareasUsuario.filter(t => t.status === 'Completada');
+    const pendientes = tareasUsuario.filter(t => t.status !== 'Completada');
+    return { total: tareasUsuario.length, completadas, pendientes };
+  }, [tareasUsuario]);
+
   const renderContent = () => {
     if (activeSection === 'inicio') {
-      const tareasUsuario = tasks.filter(t => t.user === username);
-      const completadas = tareasUsuario.filter(t => t.status === 'Completada');
-      const pendientes = tareasUsuario.filter(t => t.status !== 'Completada');
+      const { total, completadas, pendientes } = estadisticas;
 
       return (
         <div className="container text-light">
@@ -329,7 +396,7 @@ const sortTasksByStatus = (tasks) => {
               <div className="card bg-primary text-white" onClick={() => setTaskFilter(tareasUsuario)} style={{ cursor: 'pointer' }}>
                 <div className="card-body">
                   <h5 className="card-title">Total</h5>
-                  <p className="display-6">{tareasUsuario.length}</p>
+                  <p className="display-6">{total}</p>
                 </div>
               </div>
             </div>
@@ -422,10 +489,14 @@ const sortTasksByStatus = (tasks) => {
             </select>
           </div>
           <div className="w-100 mt-4">
-            {renderTaskList(
-              sortOption === 'prioridad' 
-                ? sortTasksByPriority(tasks.filter(t => t.user === username))
-                : sortTasksByStatus(tasks.filter(t => t.user === username))
+            {loading ? (
+              <div className="text-center">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Cargando...</span>
+                </div>
+              </div>
+            ) : (
+              renderTaskList(tareasFiltradasYOrdenadas)
             )}
           </div>
         </div>
@@ -517,8 +588,16 @@ const sortTasksByStatus = (tasks) => {
         )}
       </div>
       <div className="flex-grow-1 p-4 text-light">
+        {loading && activeSection !== 'tareas' && (
+          <div className="text-center mb-3">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        )}
         {renderContent()}
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }
