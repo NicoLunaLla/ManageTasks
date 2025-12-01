@@ -126,6 +126,7 @@ git log --oneline
 
 📌 **Repositorio del proyecto:**  
 https://github.com/NicoLunaLla/ManageTasks
+https://github.com/BR017/ManageTasks
 
 ---
 
